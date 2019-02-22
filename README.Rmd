@@ -7,3 +7,67 @@ output: html_document
 
 Link to our repo
 `https://github.com/dapengh/stat585_lab2_group5`
+
+
+```{r, include=FALSE}
+library(tidyverse)
+library(sf)
+library(ggspatial)
+library(maps)
+library(rgeos)
+library(maptools)
+library(purrr)
+```
+
+
+
+```{r,warning=FALSE}
+p <- ggplot() +geom_sf(data =read_sf("./data/ME-GIS/Coastline2.shp"), colour="grey10", fill="grey90") +
+  geom_sf(data = read_sf("./data/ME-GIS/Rivers19.shp"), 
+          colour="steelblue", size=0.3) +
+  geom_sf(data = read_sf("./data/ME-GIS/PrimaryRoads.shp"), 
+          size = 0.7, colour="grey30") +
+  geom_sf(data = read_sf("./data/ME-GIS/Cities.shp")) + 
+  geom_sf_text(data=read_sf("data/ME-GIS/Cities.shp"),aes(label=Name),size=3,colour="red") +
+  annotation_scale() +
+  annotation_north_arrow(location="tl",height = unit(0.8,"cm"),width = unit(0.8,"cm")) +
+  theme_bw()
+p
+```
+
+
+```{r,fig.width=8,fig.height=8}
+ozbig <- read_sf("data/gadm36_AUS_shp/gadm36_AUS_1.shp")
+oz_st <- maptools::thinnedSpatialPoly(
+  as(ozbig, "Spatial"), tolerance = 0.1, 
+  minarea = 0.001, topologyPreserve = TRUE)
+oz <- st_as_sf(oz_st)
+
+Mat2Df <- function(Mat){
+  long <- Mat[,1]
+  lat <- Mat[,2]
+  order <- 1:nrow(Mat)
+  group <- rep(rnorm(1),nrow(Mat))
+  df <- data.frame(long=long,lat=lat,group=group,order=order)
+  df
+}
+oz_flatten <- flatten(flatten(oz$geometry))
+ozplus <- purrr::map_df(.x=oz_flatten,.f=Mat2Df)
+ozplus %>% ggplot(aes(x=long, y=lat, group=group)) + 
+  geom_polygon()
+```
+
+The country we picked is Germany
+
+```{r,fig.width=5,fig.height=6}
+DEUbig <- read_sf("data/gadm36_DEU_shp/gadm36_DEU_1.shp")
+DEU_st <- maptools::thinnedSpatialPoly(
+  as(DEUbig, "Spatial"), tolerance = 0.1, 
+  minarea = 0.001, topologyPreserve = TRUE)
+DEU <- st_as_sf(DEU_st)
+
+DEU_flatten <- flatten(flatten(DEU$geometry))
+DEUplus <- purrr::map_df(.x=DEU_flatten,.f=Mat2Df)
+DEUplus %>% ggplot(aes(x=long, y=lat, group=group)) + 
+  geom_polygon()
+```
